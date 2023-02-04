@@ -4,18 +4,21 @@ if [[ $1 == '-h' ]]; then
 cat << EOF
 NAME: icc - Insert Color Code
 
-USAGE: icc [CODE | COLOR_NAME]
+USAGE: icc COLOR[+COLOR] WORDS...
 
-DESCRIPTION: Super simple Bash script that generates color codes.
-If no option is provided, then reset code "\\e[0m" is inserted, marking end of colorized text sequence.
+DESCRIPTION: Super simple Bash script that generates color codes for provided text.
+You can specify two colors by separating them with "+" - it's useful when you want to provide both
+foreground and background colors.
 Examples:
-  echo "\$(icc red)RED TEXT\$(icc)" # $($0 red)RED TEXT$($0)
-  echo "\$(icc bgreen)GREEN BACKGROUND\$(icc)" # $($0 bgreen)GREEN BACKGROUND$($0)
-  echo "\$(icc black)\$(icc byellow)BLACK ON YELLOW\$(icc)\$(icc)" # $($0 black)$($0 byellow)BLACK ON YELLOW$($0)$($0) 
+  echo "\$(icc red RED TEXT)" # $($0 red RED TEXT)
+  echo "\$(icc bgreen GREEN BACKGROUND)" # $($0 bgreen GREEN BACKGROUND)
+  echo "\$(icc black+byellow BLACK ON YELLOW)" # $($0 black+byellow BLACK ON YELLOW) 
+  echo "\$(icc 30+103 BLACK ON YELLOW)" # $($0 30+103 BLACK ON YELLOW) 
 
 OPTIONS:
-  CODE - ANSI escape color code (https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit)
-  COLOR_NAME - name of color. Available names: black, red, green, yellow, blue, magenta, cyan, lgray, gray, lred, lgreen, lyellow, lblue, lmagenta, lcyan, white. Prefix "l" stands for "light". Add prefix "b" to color name if you want to get background color instead of foreground.
+* COLOR - color name or code.
+    * Available names: black, red, green, yellow, blue, magenta, cyan, lgray, gray, lred, lgreen, lyellow, lblue, lmagenta, lcyan, white. Prefix "l" stands for "light". Add prefix "b" to color name if you want to set background color instead of foreground.
+    * Available codes: https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit
 EOF
     exit
 fi
@@ -25,42 +28,54 @@ if (( $# == 0 )); then
     exit
 fi
 
-case $1 in
-    # foreground colors
-    30|black)    CODE=30;;
-    31|red)      CODE=31;;
-    32|green)    CODE=32;;
-    33|yellow)   CODE=33;;
-    34|blue)     CODE=34;;
-    35|magenta)  CODE=35;;
-    36|cyan)     CODE=36;;
-    92|lgray)    CODE=92;;
-    90|gray)     CODE=90;;
-    91|lred)     CODE=91;;
-    92|lgreen)   CODE=92;;
-    93|lyellow)  CODE=93;;
-    94|lblue)    CODE=94;;
-    95|lmagenta) CODE=95;;
-    96|lcyan)    CODE=96;;
-    97|white)    CODE=97;;
-    # background colors
-    40|bblack)     CODE=40;;
-    41|bred)       CODE=41;;
-    42|bgreen)     CODE=42;;
-    43|byellow)    CODE=43;;
-    44|bblue)      CODE=44;;
-    45|bmagenta)   CODE=45;;
-    46|bcyan)      CODE=46;;
-    100|bgray)     CODE=100;;
-    47|blgray)     CODE=47;;
-    101|blred)     CODE=101;;
-    102|blgreen)   CODE=102;;
-    103|blyellow)  CODE=103;;
-    104|blblue)    CODE=104;;
-    105|blmagenta) CODE=105;;
-    106|blcyan)    CODE=106;;
-    107|bwhite)    CODE=107;;
-    # red foreground by default
-    *) CODE=31;;
-esac
-echo -ne "\e[${CODE}m"
+make_color_code()
+{
+    case $1 in
+        # foreground colors
+        30|black)    CODE=30;;
+        31|red)      CODE=31;;
+        32|green)    CODE=32;;
+        33|yellow)   CODE=33;;
+        34|blue)     CODE=34;;
+        35|magenta)  CODE=35;;
+        36|cyan)     CODE=36;;
+        92|lgray)    CODE=92;;
+        90|gray)     CODE=90;;
+        91|lred)     CODE=91;;
+        92|lgreen)   CODE=92;;
+        93|lyellow)  CODE=93;;
+        94|lblue)    CODE=94;;
+        95|lmagenta) CODE=95;;
+        96|lcyan)    CODE=96;;
+        97|white)    CODE=97;;
+        # background colors
+        40|bblack)     CODE=40;;
+        41|bred)       CODE=41;;
+        42|bgreen)     CODE=42;;
+        43|byellow)    CODE=43;;
+        44|bblue)      CODE=44;;
+        45|bmagenta)   CODE=45;;
+        46|bcyan)      CODE=46;;
+        100|bgray)     CODE=100;;
+        47|blgray)     CODE=47;;
+        101|blred)     CODE=101;;
+        102|blgreen)   CODE=102;;
+        103|blyellow)  CODE=103;;
+        104|blblue)    CODE=104;;
+        105|blmagenta) CODE=105;;
+        106|blcyan)    CODE=106;;
+        107|bwhite)    CODE=107;;
+        # red foreground by default
+        *) CODE=31;;
+    esac
+    echo -ne "$CODE"
+}
+
+PREFIX=''
+POSTFIX=''
+for COLOR in $(echo $1 | tr '+' ' '); do
+    PREFIX+="\e[$(make_color_code $COLOR)m"
+    POSTFIX+="\e[0m"
+done
+WORDS="$(echo $@ | cut -d' ' -f 2-)"
+echo -ne "${PREFIX}${WORDS}${POSTFIX}"
